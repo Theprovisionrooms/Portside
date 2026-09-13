@@ -1,0 +1,53 @@
+:root {
+    /* colour */
+    --ink: #101418;
+    --ink-raised: #171d23;
+    --ink-line: #262e35;
+    --sand: #f3f0e8;
+    --sand-secondary: #d9d3c7;
+    --muted: #747b7f;
+    --signal: #e7a928;
+    --signal-dim: #8a6a2c;
+    --harbour: #24566a;
+    --harbour-bright: #3a7d97;
+    --danger: #b9503f;
+
+    /* text on dark / text on light */
+    --text-on-ink: var(--sand);
+    --text-on-ink-muted: var(--muted);
+    --text-on-sand: var(--ink);
+    --text-on-sand-muted: #5b5348;
+
+    /* type */
+    --font-display: 'Sora', system-ui, sans-serif;
+    --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+
+    --size-label: 0.6875rem;
+    --size-small: 0.8125rem;
+    --size-body: 0.9375rem;
+    --size-lg: 1.125rem;
+    --size-h3: 1.375rem;
+    --size-h2: clamp(1.75rem, 3vw, 2.5rem);
+    --size-h1: clamp(2.25rem, 5vw, 3.5rem);
+    --size-display: clamp(2.75rem, 7vw, 5.5rem);
+
+    --tracking-label: 0.08em;
+
+    /* spacing */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-7: 3rem;
+    --space-8: 4.5rem;
+
+    /* shape */
+    --radius-sm: 3px;
+    --radius-md: 6px;
+    --border-thin: 1px solid var(--ink-line);
+    --border-thin-light: 1px solid var(--sand-secondary);
+
+    --max-width: 1180px;
+}
