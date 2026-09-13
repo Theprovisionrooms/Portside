@@ -1,0 +1,11 @@
+# Copy this file to .dev.vars for local development (wrangler pages dev
+# reads it automatically). Never commit the real .dev.vars file - it's in
+# .gitignore.
+
+JWT_SECRET=change-me-to-any-long-random-string
+
+# Boosted posts (see /membership on the frontend) go through Stripe Checkout.
+# Get these from the Stripe dashboard - without them, POST /api/posts/:id/boost
+# returns a 503 rather than silently accepting an unpaid boost.
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=

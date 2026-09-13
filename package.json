@@ -1,0 +1,29 @@
+{
+  "name": "portside",
+  "version": "0.3.0",
+  "description": "PortSide - the Southport business network. One Cloudflare Pages project: React frontend, Hono API as Pages Functions, D1 database.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev -- vite",
+    "dev:vite": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler pages deploy dist",
+    "db:create": "wrangler d1 create portside",
+    "db:migrate:local": "wrangler d1 execute portside --local --file=server/db/schema.sql",
+    "db:migrate:remote": "wrangler d1 execute portside --remote --file=server/db/schema.sql"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "hono": "^4.6.14",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "stripe": "^17.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0",
+    "wrangler": "^4.0.0"
+  }
+}
