@@ -1,16 +1,44 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import StatusLabel from '../components/StatusLabel.jsx';
 import SandgrounderMark from '../components/SandgrounderMark.jsx';
-import { getBusiness, posts, referrals } from '../data/placeholderData.js';
-
-// stands in for the logged-in business until auth is wired to real sessions
-const CURRENT_SLUG = 'candymonium';
+import { api } from '../api/client';
 
 export default function Dashboard() {
-    const business = getBusiness(CURRENT_SLUG);
-    const myPosts = posts.filter((p) => p.businessSlug === CURRENT_SLUG);
-    const given = referrals.filter((r) => r.fromSlug === CURRENT_SLUG);
-    const received = referrals.filter((r) => r.toSlug === CURRENT_SLUG);
+    const [business, setBusiness] = useState(null);
+    const [status, setStatus] = useState('loading');
+
+    useEffect(() => {
+        api.get('/me/businesses')
+            .then((rows) => {
+                if (rows.length === 0) { setStatus('empty'); return; }
+                setBusiness(rows[0]);
+                setStatus('ready');
+            })
+            .catch(() => setStatus('error'));
+    }, []);
+
+    if (status === 'loading') {
+        return <div className="shell" style={{ paddingTop: 'var(--space-6)' }}><p className="text-small muted">Loading your dashboard…</p></div>;
+    }
+    if (status === 'error') {
+        return <div className="shell" style={{ paddingTop: 'var(--space-6)' }}><p className="text-small muted">Couldn&apos;t load your dashboard. Try logging in again.</p></div>;
+    }
+    if (status === 'empty') {
+        return (
+            <div className="shell" style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-8)' }}>
+                <h2>No business on this account yet</h2>
+                <p className="text-small muted" style={{ maxWidth: '52ch' }}>
+                    Add a business profile to start posting and referring customers.
+                </p>
+                <Link to="/dashboard/edit-profile" className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }}>
+                    Create your business
+                </Link>
+            </div>
+        );
+    }
+
+    const connections = Number(business.referrals_given) + Number(business.referrals_received);
 
     return (
         <div className="shell" style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-8)' }}>
@@ -31,19 +59,19 @@ export default function Dashboard() {
             <div className="dashboard-stats">
                 <div className="card">
                     <div className="label">Connections</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--size-h2)' }}>{business.connections}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--size-h2)' }}>{connections}</div>
                 </div>
                 <div className="card">
                     <div className="label">Posts</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--size-h2)' }}>{myPosts.length}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--size-h2)' }}>{business.posts_count}</div>
                 </div>
                 <div className="card">
                     <div className="label">Referrals given</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--size-h2)', color: 'var(--signal)' }}>{given.length}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--size-h2)', color: 'var(--signal)' }}>{business.referrals_given}</div>
                 </div>
                 <div className="card">
                     <div className="label">Referrals received</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--size-h2)' }}>{received.length}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--size-h2)' }}>{business.referrals_received}</div>
                 </div>
             </div>
 
@@ -54,7 +82,7 @@ export default function Dashboard() {
                         <Link to="/dashboard/new-post" className="btn btn-primary">New post</Link>
                         <Link to="/network" className="btn btn-outline">Refer a customer</Link>
                         <Link to="/messages" className="btn btn-outline">Messages</Link>
-                        <Link to="/membership" className="btn btn-outline">Manage membership</Link>
+                        <Link to="/membership" className="btn btn-outline">Pricing</Link>
                     </div>
                 </div>
 
@@ -64,7 +92,7 @@ export default function Dashboard() {
                         <div>
                             <div className="label label--signal">Member status</div>
                             <p className="text-small muted" style={{ margin: 0 }}>
-                                Verified Southport member, eligible for founding-member pricing while it lasts.
+                                Verified Southport founding member — one of the first businesses on the network.
                             </p>
                         </div>
                     </div>

@@ -1,21 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ScopeTag from '../components/ScopeTag.jsx';
+import { api } from '../api/client';
 
 const SCOPES = ['local', 'national', 'international'];
 const TYPES = ['update', 'offer', 'event'];
 
 export default function NewPost() {
+    const [businessId, setBusinessId] = useState(null);
     const [content, setContent] = useState('');
     const [scope, setScope] = useState('local');
     const [postType, setPostType] = useState('update');
     const [posted, setPosted] = useState(false);
+    const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
 
-    function handleSubmit(e) {
+    useEffect(() => {
+        api.get('/me/businesses')
+            .then((rows) => setBusinessId(rows[0]?.id ?? null))
+            .catch(() => setError('Could not load your business - try refreshing.'));
+    }, []);
+
+    async function handleSubmit(e) {
         e.preventDefault();
-        // wire to POST /api/posts once the backend is connected
-        setPosted(true);
+        setError('');
+        if (!businessId) {
+            setError('No business found on your account yet.');
+            return;
+        }
+        setSubmitting(true);
+        try {
+            await api.post('/posts', { businessId, content, scope, postType });
+            setPosted(true);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setSubmitting(false);
+        }
     }
 
     if (posted) {
@@ -81,7 +103,11 @@ export default function NewPost() {
                     <ScopeTag scope={scope} />
                 </div>
 
-                <button type="submit" className="btn btn-primary">Post</button>
+                {error && <p className="text-small" style={{ color: 'var(--danger)' }} role="alert">{error}</p>}
+
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                    {submitting ? 'Posting…' : 'Post'}
+                </button>
             </form>
         </div>
     );

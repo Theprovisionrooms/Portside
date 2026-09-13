@@ -18,6 +18,11 @@ CREATE TABLE users (
     password_hash   VARCHAR(255) NOT NULL,
     full_name       VARCHAR(150) NOT NULL,
     region_id       INTEGER REFERENCES regions(id),
+    -- platform-level admin, not a business role. Nobody can set this on
+    -- themselves - there's no route for it. Grant it by hand in the database
+    -- for whoever should have moderation/admin-dashboard access:
+    --   UPDATE users SET is_admin = true WHERE email = '...';
+    is_admin        BOOLEAN NOT NULL DEFAULT false,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -37,6 +42,10 @@ CREATE TABLE businesses (
     tier            VARCHAR(20) NOT NULL DEFAULT 'free'
                         CHECK (tier IN ('free', 'founding', 'premium')),
     verified        BOOLEAN NOT NULL DEFAULT false,
+    -- admin moderation state - set from the admin dashboard, not by the
+    -- business itself
+    featured        BOOLEAN NOT NULL DEFAULT false,
+    suspended       BOOLEAN NOT NULL DEFAULT false,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (region_id, slug)
 );
@@ -116,7 +125,11 @@ CREATE TABLE sponsorships (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- premium business subscriptions (Stripe-backed)
+-- premium business subscriptions (Stripe-backed) - parked: PortSide is free
+-- for every business with no paid tier, so this table is currently unused.
+-- Boosted posts (see sponsorships above) are the only paid feature. Left in
+-- place rather than dropped in case a genuine premium tier gets reconsidered
+-- later, but nothing should read or write to it right now.
 CREATE TABLE subscriptions (
     id                      SERIAL PRIMARY KEY,
     business_id             INTEGER NOT NULL UNIQUE REFERENCES businesses(id),

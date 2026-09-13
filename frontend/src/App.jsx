@@ -17,6 +17,7 @@ import Search from './pages/Search.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 import Admin from './pages/Admin.jsx';
+import RequireAdmin from './components/RequireAdmin.jsx';
 
 export default function App() {
     return (
@@ -35,7 +36,7 @@ export default function App() {
                 <Route path="/dashboard/edit-profile" element={<EditProfile />} />
                 <Route path="/dashboard/new-post" element={<NewPost />} />
                 <Route path="/membership" element={<Membership />} />
-                <Route path="/admin" element={<Admin />} />
+                <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />

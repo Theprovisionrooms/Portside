@@ -57,7 +57,7 @@ export default function Nav() {
                     </Link>
                 ))}
                 <Link to="/dashboard" className="nav-link" onClick={() => setOpen(false)}>Dashboard</Link>
-                <Link to="/membership" className="nav-link" onClick={() => setOpen(false)}>Membership</Link>
+                <Link to="/membership" className="nav-link" onClick={() => setOpen(false)}>Pricing</Link>
             </div>
         </header>
     );

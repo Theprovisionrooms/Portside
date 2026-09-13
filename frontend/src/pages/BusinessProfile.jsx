@@ -1,20 +1,52 @@
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import StatusLabel from '../components/StatusLabel.jsx';
 import ScopeTag from '../components/ScopeTag.jsx';
 import Connection from '../components/Connection.jsx';
-import CornerMarks from '../components/CornerMarks.jsx';
-import { getBusiness, posts, referrals } from '../data/placeholderData.js';
+import { api } from '../api/client';
 
 export default function BusinessProfile() {
     const { slug } = useParams();
-    const business = getBusiness(slug);
+    const [business, setBusiness] = useState(null);
+    const [posts, setPosts] = useState([]);
+    const [referrals, setReferrals] = useState([]);
+    const [status, setStatus] = useState('loading');
 
-    if (!business) {
+    useEffect(() => {
+        let cancelled = false;
+        setStatus('loading');
+
+        async function load() {
+            try {
+                const biz = await api.get(`/businesses/${slug}`);
+                const businessPosts = await api.get(`/businesses/${slug}/posts`);
+                if (cancelled) return;
+                setBusiness(biz);
+                setPosts(businessPosts);
+                setStatus('ready');
+
+                // referral activity is only visible to logged-in members - allowed
+                // to fail quietly for anonymous visitors
+                try {
+                    const rows = await api.get(`/referrals/business/${biz.id}`);
+                    if (!cancelled) setReferrals(rows);
+                } catch {
+                    if (!cancelled) setReferrals([]);
+                }
+            } catch {
+                if (!cancelled) setStatus('not-found');
+            }
+        }
+        load();
+        return () => { cancelled = true; };
+    }, [slug]);
+
+    if (status === 'loading') {
+        return <div className="shell" style={{ paddingTop: 'var(--space-7)' }}><p className="text-small muted">Loading…</p></div>;
+    }
+    if (status === 'not-found' || !business) {
         return <div className="shell" style={{ paddingTop: 'var(--space-7)' }}><p>Business not found.</p></div>;
     }
-
-    const businessPosts = posts.filter((p) => p.businessSlug === slug);
-    const businessReferrals = referrals.filter((r) => r.fromSlug === slug || r.toSlug === slug);
 
     return (
         <div>
@@ -45,12 +77,17 @@ export default function BusinessProfile() {
                         <hr className="divider" />
 
                         <h3>Recent posts</h3>
-                        {businessPosts.length === 0 && <p className="text-small muted">No posts yet.</p>}
-                        {businessPosts.map((post) => (
+                        {posts.length === 0 && <p className="text-small muted">No posts yet.</p>}
+                        {posts.map((post) => (
                             <article key={post.id} className="post-card">
                                 <div className="row spread">
-                                    <span className="text-small muted">{post.createdAt}</span>
-                                    <ScopeTag scope={post.scope} />
+                                    <span className="text-small muted">
+                                        {new Date(post.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                    </span>
+                                    <div className="row gap-2">
+                                        {post.is_boosted && <span className="partner-tag">Promoted</span>}
+                                        <ScopeTag scope={post.scope} />
+                                    </div>
                                 </div>
                                 <p style={{ margin: 0 }}>{post.content}</p>
                             </article>
@@ -61,7 +98,9 @@ export default function BusinessProfile() {
                         <div className="card">
                             <div className="label" style={{ marginBottom: 'var(--space-3)' }}>Network</div>
                             <div className="stack gap-3">
-                                <StatusLabel label="Connections" value={business.connections} signal />
+                                {business.connections !== undefined && (
+                                    <StatusLabel label="Connections" value={business.connections} signal />
+                                )}
                                 <StatusLabel label="Tier" value={business.tier} />
                             </div>
                             <Link to="/messages" className="btn btn-primary" style={{ marginTop: 'var(--space-4)', width: '100%', justifyContent: 'center' }}>
@@ -69,12 +108,17 @@ export default function BusinessProfile() {
                             </Link>
                         </div>
 
-                        {businessReferrals.length > 0 && (
+                        {referrals.length > 0 && (
                             <div className="card">
                                 <div className="label" style={{ marginBottom: 'var(--space-3)' }}>Referral activity</div>
                                 <div className="stack gap-3">
-                                    {businessReferrals.map((r, i) => (
-                                        <Connection key={i} fromLabel={getBusiness(r.fromSlug)?.name} toLabel={getBusiness(r.toSlug)?.name} status={r.status} />
+                                    {referrals.map((r) => (
+                                        <Connection
+                                            key={r.id}
+                                            fromLabel={r.from_business_name}
+                                            toLabel={r.to_business_name}
+                                            status={r.status}
+                                        />
                                     ))}
                                 </div>
                             </div>

@@ -1,12 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import StatusLabel from '../components/StatusLabel.jsx';
-import { businesses } from '../data/placeholderData.js';
+import { api } from '../api/client';
+
+const REGION = 'southport';
 
 export default function Directory() {
     const [query, setQuery] = useState('');
+    const [businesses, setBusinesses] = useState([]);
+    const [status, setStatus] = useState('loading');
+
+    useEffect(() => {
+        api.get(`/regions/${REGION}/businesses`)
+            .then((rows) => { setBusinesses(rows); setStatus('ready'); })
+            .catch(() => setStatus('error'));
+    }, []);
+
     const visible = businesses.filter((b) =>
-        (b.name + b.category).toLowerCase().includes(query.toLowerCase())
+        (b.name + (b.category || '')).toLowerCase().includes(query.toLowerCase())
     );
 
     return (
@@ -19,7 +30,7 @@ export default function Directory() {
                     </div>
                     <h2 style={{ marginBottom: 0 }}>Southport businesses</h2>
                 </div>
-                <StatusLabel label="Members" value={businesses.length} signal />
+                {status === 'ready' && <StatusLabel label="Members" value={businesses.length} signal />}
             </div>
 
             <div className="field" style={{ maxWidth: 360, marginBottom: 'var(--space-6)' }}>
@@ -30,8 +41,13 @@ export default function Directory() {
                 />
             </div>
 
+            {status === 'error' && (
+                <p className="text-small muted">Couldn&apos;t load the directory right now. Try again shortly.</p>
+            )}
+            {status === 'loading' && <p className="text-small muted">Loading directory…</p>}
+
             <div className="directory-grid">
-                {visible.map((b) => (
+                {status === 'ready' && visible.map((b) => (
                     <Link key={b.slug} to={`/business/${b.slug}`} className="business-card">
                         <div className="row spread">
                             <span className="mark">{b.name.charAt(0)}</span>

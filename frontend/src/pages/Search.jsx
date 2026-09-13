@@ -1,12 +1,26 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { businesses, posts, getBusiness } from '../data/placeholderData.js';
+import { api } from '../api/client';
+
+const REGION = 'southport';
 
 export default function Search() {
     const [query, setQuery] = useState('');
-    const q = query.toLowerCase().trim();
+    const [businesses, setBusinesses] = useState([]);
+    const [posts, setPosts] = useState([]);
+    const [status, setStatus] = useState('loading');
 
-    const businessResults = q ? businesses.filter((b) => (b.name + b.category).toLowerCase().includes(q)) : [];
+    useEffect(() => {
+        Promise.all([
+            api.get(`/regions/${REGION}/businesses`),
+            api.get(`/regions/${REGION}/feed`),
+        ])
+            .then(([biz, feed]) => { setBusinesses(biz); setPosts(feed); setStatus('ready'); })
+            .catch(() => setStatus('error'));
+    }, []);
+
+    const q = query.toLowerCase().trim();
+    const businessResults = q ? businesses.filter((b) => (b.name + (b.category || '')).toLowerCase().includes(q)) : [];
     const postResults = q ? posts.filter((p) => p.content.toLowerCase().includes(q)) : [];
 
     return (
@@ -24,7 +38,9 @@ export default function Search() {
                 />
             </div>
 
-            {q && businessResults.length === 0 && postResults.length === 0 && (
+            {status === 'error' && <p className="text-small muted">Couldn&apos;t load search results right now.</p>}
+
+            {q && status === 'ready' && businessResults.length === 0 && postResults.length === 0 && (
                 <p className="muted text-small">No matches for &ldquo;{query}&rdquo;.</p>
             )}
 
@@ -51,7 +67,7 @@ export default function Search() {
                     <div className="stack gap-3">
                         {postResults.map((p) => (
                             <Link key={p.id} to={`/post/${p.id}`} className="card">
-                                <div className="text-small muted">{getBusiness(p.businessSlug)?.name}</div>
+                                <div className="text-small muted">{p.business_name}</div>
                                 <p style={{ margin: 0 }}>{p.content}</p>
                             </Link>
                         ))}

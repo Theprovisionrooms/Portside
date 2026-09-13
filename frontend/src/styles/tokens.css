@@ -50,4 +50,9 @@
     --border-thin-light: 1px solid var(--sand-secondary);
 
     --max-width: 1180px;
+
+    /* depth: a machined-panel sheen + close contact shadow, not a soft drop shadow */
+    --panel-sheen: linear-gradient(155deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 45%);
+    --panel-edge: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset;
+    --touch-target: 44px;
 }

@@ -18,4 +18,14 @@ function requireAuth(req, res, next) {
     }
 }
 
-module.exports = { requireAuth };
+// mount after requireAuth. Admin status comes from the JWT payload set at
+// login/signup, which itself comes from users.is_admin - there is no route
+// that lets a user grant this to themselves.
+function requireAdmin(req, res, next) {
+    if (!req.user?.isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+}
+
+module.exports = { requireAuth, requireAdmin };

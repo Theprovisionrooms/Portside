@@ -1,28 +1,59 @@
-import { useState } from 'react';
-import { getBusiness } from '../data/placeholderData.js';
-
-const CONVERSATIONS = [
-    { slug: 'the-victoria-hotel', preview: 'Function room is free for the 14th if you want it.', unread: true,
-      thread: [
-          { from: 'them', text: "We've got a launch night booked, want to cross-promote?" },
-          { from: 'me', text: 'Yes, send over the date and we\'ll post it through the network.' },
-          { from: 'them', text: 'Function room is free for the 14th if you want it.' },
-      ] },
-    { slug: 'joyces-irish-whiskey', preview: 'Sent through the stockist list, let us know.', unread: false,
-      thread: [
-          { from: 'them', text: 'Sent through the stockist list, let us know if any Southport shops fit.' },
-      ] },
-    { slug: 'lord-street-roasters', preview: 'Happy to trial a wholesale order for the studio.', unread: false,
-      thread: [
-          { from: 'me', text: 'Any chance of a wholesale account for the studio?' },
-          { from: 'them', text: 'Happy to trial a wholesale order for the studio.' },
-      ] },
-];
+import { useEffect, useState } from 'react';
+import { api } from '../api/client';
 
 export default function Messages() {
-    const [activeSlug, setActiveSlug] = useState(CONVERSATIONS[0].slug);
-    const active = CONVERSATIONS.find((c) => c.slug === activeSlug);
-    const activeBusiness = getBusiness(activeSlug);
+    const [business, setBusiness] = useState(null);
+    const [conversations, setConversations] = useState([]);
+    const [activeId, setActiveId] = useState(null);
+    const [thread, setThread] = useState([]);
+    const [draft, setDraft] = useState('');
+    const [status, setStatus] = useState('loading');
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        api.get('/me/businesses')
+            .then((rows) => {
+                const mine = rows[0] || null;
+                setBusiness(mine);
+                if (!mine) { setStatus('empty'); return; }
+                return api.get(`/conversations?businessId=${mine.id}`).then((rows2) => {
+                    setConversations(rows2);
+                    setStatus('ready');
+                    if (rows2[0]) setActiveId(rows2[0].id);
+                });
+            })
+            .catch(() => setStatus('error'));
+    }, []);
+
+    useEffect(() => {
+        if (!activeId) return;
+        api.get(`/conversations/${activeId}/messages`).then(setThread).catch(() => setThread([]));
+    }, [activeId]);
+
+    async function handleSend(e) {
+        e.preventDefault();
+        setError('');
+        if (!draft.trim()) return;
+        try {
+            const message = await api.post(`/conversations/${activeId}/messages`, { businessId: business.id, content: draft });
+            setThread((t) => [...t, message]);
+            setDraft('');
+        } catch (err) {
+            setError(err.message);
+        }
+    }
+
+    const active = conversations.find((c) => c.id === activeId);
+
+    if (status === 'loading') {
+        return <div className="shell" style={{ paddingTop: 'var(--space-6)' }}><p className="text-small muted">Loading…</p></div>;
+    }
+    if (status === 'error') {
+        return <div className="shell" style={{ paddingTop: 'var(--space-6)' }}><p className="text-small muted">Couldn&apos;t load your messages.</p></div>;
+    }
+    if (status === 'empty') {
+        return <div className="shell" style={{ paddingTop: 'var(--space-6)' }}><p className="text-small muted">Add a business to your account to message other members.</p></div>;
+    }
 
     return (
         <div className="shell" style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-8)' }}>
@@ -32,49 +63,51 @@ export default function Messages() {
             </div>
             <h2>Business-to-business</h2>
 
-            <div className="messages-layout">
-                <div className="stack messages-list">
-                    {CONVERSATIONS.map((c) => {
-                        const b = getBusiness(c.slug);
-                        return (
-                            <button
-                                key={c.slug}
-                                onClick={() => setActiveSlug(c.slug)}
-                                className={`messages-list__item ${c.slug === activeSlug ? 'is-active' : ''}`}
-                            >
-                                <span className="mark">{b.name.charAt(0)}</span>
-                                <span className="stack" style={{ minWidth: 0, alignItems: 'flex-start' }}>
-                                    <span style={{ fontWeight: 600 }}>{b.name}</span>
-                                    <span className="text-small muted" style={{
-                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%',
-                                    }}>{c.preview}</span>
-                                </span>
-                                {c.unread && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--signal)', marginLeft: 'auto' }} />}
-                            </button>
-                        );
-                    })}
-                </div>
+            {conversations.length === 0 && (
+                <p className="text-small muted">No conversations yet. Message a business from its profile page to start one.</p>
+            )}
 
-                <div className="card messages-thread">
-                    <div className="row gap-3" style={{ marginBottom: 'var(--space-4)' }}>
-                        <span className="mark">{activeBusiness.name.charAt(0)}</span>
-                        <div>
-                            <div style={{ fontWeight: 600 }}>{activeBusiness.name}</div>
-                            <div className="text-small muted">{activeBusiness.category}</div>
-                        </div>
-                    </div>
-                    <div className="stack gap-3" style={{ marginBottom: 'var(--space-5)' }}>
-                        {active.thread.map((m, i) => (
-                            <div key={i} className={`message-bubble ${m.from === 'me' ? 'message-bubble--me' : ''}`}>
-                                {m.text}
-                            </div>
+            {conversations.length > 0 && (
+                <div className="messages-layout">
+                    <div className="stack messages-list">
+                        {conversations.map((c) => (
+                            <button
+                                key={c.id}
+                                onClick={() => setActiveId(c.id)}
+                                className={`messages-list__item ${c.id === activeId ? 'is-active' : ''}`}
+                            >
+                                <span className="mark">{c.other_business_name.charAt(0)}</span>
+                                <span className="stack" style={{ minWidth: 0, alignItems: 'flex-start' }}>
+                                    <span style={{ fontWeight: 600 }}>{c.other_business_name}</span>
+                                </span>
+                            </button>
                         ))}
                     </div>
-                    <div className="field">
-                        <input placeholder="Write a message" />
+
+                    <div className="card messages-thread">
+                        {active && (
+                            <>
+                                <div className="row gap-3" style={{ marginBottom: 'var(--space-4)' }}>
+                                    <span className="mark">{active.other_business_name.charAt(0)}</span>
+                                    <div style={{ fontWeight: 600 }}>{active.other_business_name}</div>
+                                </div>
+                                <div className="stack gap-3" style={{ marginBottom: 'var(--space-5)' }}>
+                                    {thread.length === 0 && <p className="text-small muted">No messages yet - say hello.</p>}
+                                    {thread.map((m) => (
+                                        <div key={m.id} className={`message-bubble ${m.sender_business_id === business.id ? 'message-bubble--me' : ''}`}>
+                                            {m.content}
+                                        </div>
+                                    ))}
+                                </div>
+                                <form onSubmit={handleSend} className="field">
+                                    <input placeholder="Write a message" value={draft} onChange={(e) => setDraft(e.target.value)} />
+                                </form>
+                                {error && <p className="text-small" style={{ color: 'var(--danger)' }} role="alert">{error}</p>}
+                            </>
+                        )}
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

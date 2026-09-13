@@ -23,14 +23,20 @@ router.post('/signup', async (req, res) => {
         const result = await pool.query(
             `INSERT INTO users (email, password_hash, full_name, region_id)
              VALUES ($1, $2, $3, $4)
-             RETURNING id, email, full_name, region_id`,
+             RETURNING id, email, full_name, region_id, is_admin`,
             [email, passwordHash, fullName, regionId]
         );
 
         const user = result.rows[0];
-        const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        // is_admin is always false at signup - it's a DB-only grant, never
+        // something a request body can set
+        const token = jwt.sign(
+            { id: user.id, email: user.email, isAdmin: user.is_admin },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' }
+        );
 
-        res.status(201).json({ user, token });
+        res.status(201).json({ user: { ...user, isAdmin: user.is_admin }, token });
     } catch (err) {
         if (err.code === '23505') {
             return res.status(409).json({ error: 'An account with that email already exists' });
@@ -52,9 +58,19 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Incorrect email or password' });
         }
 
-        const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        const token = jwt.sign(
+            { id: user.id, email: user.email, isAdmin: user.is_admin },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' }
+        );
         res.json({
-            user: { id: user.id, email: user.email, fullName: user.full_name, regionId: user.region_id },
+            user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.full_name,
+                regionId: user.region_id,
+                isAdmin: user.is_admin,
+            },
             token,
         });
     } catch (err) {

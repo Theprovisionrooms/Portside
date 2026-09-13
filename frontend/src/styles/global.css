@@ -77,6 +77,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
     .shell { padding: 0 var(--space-4); }
 }
 
+/* ---------- touch ergonomics ---------- */
+/* iOS Safari zooms the viewport on focus if a field's font is under 16px -
+   fields inherit the 15px body size otherwise, so this overrides it directly
+   rather than bumping the whole site's type scale. */
+input, textarea, select {
+    font-size: max(16px, var(--size-body));
+}
+
 .stack { display: flex; flex-direction: column; }
 .row { display: flex; align-items: center; }
 .gap-1 { gap: var(--space-1); }
