@@ -374,18 +374,6 @@
 }
 .eyebrow-block .rule { width: 24px; height: 1px; background: var(--signal); }
 
-/* network node subtle activity pulse - purposeful, not decorative flourish */
-@keyframes network-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.45; }
-}
-.network-node-pulse {
-    animation: network-pulse 3.6s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-    .network-node-pulse { animation: none; }
-}
-
 @media (max-width: 860px) {
     .nav-status-labels { display: none; }
 }

@@ -22,7 +22,10 @@ export default function Dashboard() {
                         <StatusLabel label="Tier" value={business.tier} signal={business.tier !== 'free'} />
                     </div>
                 </div>
-                <Link to={`/business/${business.slug}`} className="btn btn-outline">View public profile</Link>
+                <div className="row gap-3">
+                    <Link to="/dashboard/edit-profile" className="btn btn-outline">Edit profile</Link>
+                    <Link to={`/business/${business.slug}`} className="btn btn-outline">View public profile</Link>
+                </div>
             </div>
 
             <div className="dashboard-stats">
@@ -48,7 +51,7 @@ export default function Dashboard() {
                 <div>
                     <h3>Quick actions</h3>
                     <div className="row gap-3 wrap">
-                        <button className="btn btn-primary">New post</button>
+                        <Link to="/dashboard/new-post" className="btn btn-primary">New post</Link>
                         <Link to="/network" className="btn btn-outline">Refer a customer</Link>
                         <Link to="/messages" className="btn btn-outline">Messages</Link>
                         <Link to="/membership" className="btn btn-outline">Manage membership</Link>

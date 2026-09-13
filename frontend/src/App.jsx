@@ -10,10 +10,13 @@ import Network from './pages/Network.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
 import Messages from './pages/Messages.jsx';
 import Dashboard from './pages/Dashboard.jsx';
+import EditProfile from './pages/EditProfile.jsx';
+import NewPost from './pages/NewPost.jsx';
 import Membership from './pages/Membership.jsx';
 import Search from './pages/Search.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
+import Admin from './pages/Admin.jsx';
 
 export default function App() {
     return (
@@ -29,7 +32,10 @@ export default function App() {
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard/edit-profile" element={<EditProfile />} />
+                <Route path="/dashboard/new-post" element={<NewPost />} />
                 <Route path="/membership" element={<Membership />} />
+                <Route path="/admin" element={<Admin />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
