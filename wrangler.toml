@@ -4,6 +4,7 @@ pages_build_output_dir = "dist"
 
 # Created by `npm run db:create`. Swap database_id for the real one that
 # command prints out. Until then, local dev still works fine against a
+# i
 # local database using this same binding.
 [[d1_databases]]
 binding = "DB"
