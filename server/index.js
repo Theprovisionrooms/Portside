@@ -9,6 +9,7 @@ import messageRoutes from './routes/messages.js';
 import leaderboardRoutes from './routes/leaderboard.js';
 import adminRoutes from './routes/admin.js';
 import meRoutes from './routes/me.js';
+import mediaRoutes from './routes/media.js';
 import { stripeWebhookHandler } from './routes/stripeWebhook.js';
 
 const app = new Hono();
@@ -33,5 +34,6 @@ app.route('/api/conversations', messageRoutes);
 app.route('/api', leaderboardRoutes);  // /api/regions/:slug/leaderboard
 app.route('/api/admin', adminRoutes);  // requireAuth + requireAdmin inside the router
 app.route('/api/me', meRoutes);
+app.route('/api', mediaRoutes);        // /api/businesses/:id/logo, /media, /api/media/*
 
 export default app;

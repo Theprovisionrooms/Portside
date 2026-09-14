@@ -3,6 +3,10 @@ import { requireAuth } from '../middleware/auth.js';
 
 const app = new Hono();
 
+function normaliseType(type) {
+    return type === 'freelance' ? 'freelance' : 'business';
+}
+
 function slugify(name) {
     return name
         .toLowerCase()
@@ -69,13 +73,14 @@ app.get('/businesses/:slug/posts', async (c) => {
 // derived from name when not given, with a numeric suffix on collision.
 app.post('/businesses', requireAuth, async (c) => {
     const body = await c.req.json();
-    const { regionSlug, name, category, description, websiteUrl, address } = body;
+    const { regionSlug, name, category, description, websiteUrl, address, type } = body;
     let slug = body.slug;
 
     if (!regionSlug || !name) {
         return c.json({ error: 'regionSlug and name are required' }, 400);
     }
     if (!slug) slug = slugify(name);
+    const businessType = normaliseType(type);
 
     try {
         const region = await c.env.DB.prepare('SELECT id FROM regions WHERE slug = ?1')
@@ -92,10 +97,10 @@ app.post('/businesses', requireAuth, async (c) => {
         }
 
         const business = await c.env.DB.prepare(
-            `INSERT INTO businesses (region_id, slug, name, category, description, website_url, address)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            `INSERT INTO businesses (region_id, slug, name, type, category, description, website_url, address)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
              RETURNING *`
-        ).bind(region.id, candidateSlug, name, category ?? null, description ?? null, websiteUrl ?? null, address ?? null).first();
+        ).bind(region.id, candidateSlug, name, businessType, category ?? null, description ?? null, websiteUrl ?? null, address ?? null).first();
 
         const user = c.get('user');
         await c.env.DB.prepare(
@@ -112,7 +117,7 @@ app.post('/businesses', requireAuth, async (c) => {
 // PATCH /api/businesses/:id - must belong to the logged-in user
 app.patch('/businesses/:id', requireAuth, async (c) => {
     const id = c.req.param('id');
-    const { name, category, description, websiteUrl, address } = await c.req.json();
+    const { name, category, description, websiteUrl, address, type } = await c.req.json();
     const user = c.get('user');
 
     const membership = await c.env.DB.prepare(
@@ -125,13 +130,14 @@ app.patch('/businesses/:id', requireAuth, async (c) => {
     const business = await c.env.DB.prepare(
         `UPDATE businesses
          SET name = COALESCE(?2, name),
-             category = COALESCE(?3, category),
-             description = COALESCE(?4, description),
-             website_url = COALESCE(?5, website_url),
-             address = COALESCE(?6, address)
+             type = COALESCE(?3, type),
+             category = COALESCE(?4, category),
+             description = COALESCE(?5, description),
+             website_url = COALESCE(?6, website_url),
+             address = COALESCE(?7, address)
          WHERE id = ?1
          RETURNING *`
-    ).bind(id, name ?? null, category ?? null, description ?? null, websiteUrl ?? null, address ?? null).first();
+    ).bind(id, name ?? null, type ? normaliseType(type) : null, category ?? null, description ?? null, websiteUrl ?? null, address ?? null).first();
 
     return c.json(business);
 });

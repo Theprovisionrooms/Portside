@@ -18,11 +18,30 @@ async function request(path, options = {}) {
     return res.json();
 }
 
+// Separate from request() above because a file upload sends FormData, not
+// JSON - it must NOT get a manual Content-Type set, the browser adds its
+// own multipart boundary automatically, forcing application/json here
+// would silently break every upload.
+async function uploadRequest(path, formData) {
+    const token = localStorage.getItem('portside_token');
+    const res = await fetch(`${API_BASE}${path}`, {
+        method: 'POST',
+        body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Upload failed: ${res.status}`);
+    }
+    return res.json();
+}
+
 export const api = {
     get: (path) => request(path),
     post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) }),
     patch: (path, body) => request(path, { method: 'PATCH', body: JSON.stringify(body) }),
     del: (path) => request(path, { method: 'DELETE' }),
+    upload: (path, formData) => uploadRequest(path, formData),
 };
 
 // Decodes the JWT payload for UI gating only (which nav links to show,

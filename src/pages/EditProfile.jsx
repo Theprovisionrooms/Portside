@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
+import BusinessGallery from '../components/BusinessGallery.jsx';
 
 const REGION = 'southport';
-const EMPTY_FORM = { name: '', category: '', description: '', websiteUrl: '', address: '' };
+const EMPTY_FORM = { name: '', type: 'business', category: '', description: '', websiteUrl: '', address: '' };
 
 export default function EditProfile() {
     const [business, setBusiness] = useState(null);
@@ -12,6 +13,9 @@ export default function EditProfile() {
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [logoUploading, setLogoUploading] = useState(false);
+    const [logoError, setLogoError] = useState('');
+    const logoInput = useRef(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -22,6 +26,7 @@ export default function EditProfile() {
                 if (existing) {
                     setForm({
                         name: existing.name || '',
+                        type: existing.type || 'business',
                         category: existing.category || '',
                         description: existing.description || '',
                         websiteUrl: existing.website_url || '',
@@ -57,6 +62,24 @@ export default function EditProfile() {
         }
     }
 
+    async function handleLogoUpload(e) {
+        const file = e.target.files?.[0];
+        if (!file || !business) return;
+        setLogoError('');
+        setLogoUploading(true);
+        try {
+            const form = new FormData();
+            form.append('file', file);
+            const { logoUrl } = await api.upload(`/businesses/${business.id}/logo`, form);
+            setBusiness((b) => ({ ...b, logo_url: logoUrl }));
+        } catch (err) {
+            setLogoError(err.message);
+        } finally {
+            setLogoUploading(false);
+            if (logoInput.current) logoInput.current.value = '';
+        }
+    }
+
     if (status === 'loading') {
         return <div className="shell" style={{ paddingTop: 'var(--space-6)' }}><p className="text-small muted">Loading…</p></div>;
     }
@@ -75,7 +98,57 @@ export default function EditProfile() {
 
             <form onSubmit={handleSubmit} className="stack gap-4" style={{ marginTop: 'var(--space-5)' }}>
                 <div className="field">
-                    <label>Business name</label>
+                    <label>Account type</label>
+                    <div className="row gap-2">
+                        <button
+                            type="button"
+                            className={form.type === 'business' ? 'btn btn-primary' : 'btn btn-outline'}
+                            onClick={() => setForm((f) => ({ ...f, type: 'business' }))}
+                        >
+                            Business
+                        </button>
+                        <button
+                            type="button"
+                            className={form.type === 'freelance' ? 'btn btn-primary' : 'btn btn-outline'}
+                            onClick={() => setForm((f) => ({ ...f, type: 'freelance' }))}
+                        >
+                            Freelance
+                        </button>
+                    </div>
+                    <p className="text-small muted" style={{ marginTop: 'var(--space-2)' }}>
+                        Freelance is for individuals offering a service with no fixed premises, address is optional.
+                    </p>
+                </div>
+
+                {business && (
+                    <div className="field">
+                        <label>{form.type === 'freelance' ? 'Profile picture' : 'Business logo'}</label>
+                        <div className="row gap-3" style={{ alignItems: 'center' }}>
+                            {business.logo_url && (
+                                <img
+                                    src={business.logo_url}
+                                    alt=""
+                                    style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: 'var(--border-thin)' }}
+                                />
+                            )}
+                            <label className="btn btn-outline" style={{ cursor: 'pointer' }}>
+                                {logoUploading ? 'Uploading…' : business.logo_url ? 'Replace' : 'Upload'}
+                                <input
+                                    ref={logoInput}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={handleLogoUpload}
+                                    disabled={logoUploading}
+                                    style={{ display: 'none' }}
+                                />
+                            </label>
+                        </div>
+                        {logoError && <p className="text-small" style={{ color: 'var(--danger)' }} role="alert">{logoError}</p>}
+                    </div>
+                )}
+
+                <div className="field">
+                    <label>{form.type === 'freelance' ? 'Service name' : 'Business name'}</label>
                     <input value={form.name} onChange={update('name')} required />
                 </div>
                 <div className="field">
@@ -91,8 +164,13 @@ export default function EditProfile() {
                     <input value={form.websiteUrl} onChange={update('websiteUrl')} placeholder="https://" />
                 </div>
                 <div className="field">
-                    <label>Address</label>
-                    <input value={form.address} onChange={update('address')} placeholder="Street, Southport" />
+                    <label>Address{form.type === 'freelance' ? ' (optional)' : ''}</label>
+                    <input
+                        value={form.address}
+                        onChange={update('address')}
+                        placeholder={form.type === 'freelance' ? 'Optional - leave blank if you work on-site' : 'Street, Southport'}
+                        required={form.type !== 'freelance'}
+                    />
                 </div>
                 {error && <p className="text-small" style={{ color: 'var(--danger)' }} role="alert">{error}</p>}
                 <div className="row gap-3">
@@ -107,6 +185,12 @@ export default function EditProfile() {
                     </p>
                 )}
             </form>
+
+            {business && (
+                <div style={{ marginTop: 'var(--space-7)' }}>
+                    <BusinessGallery businessId={business.id} />
+                </div>
+            )}
         </div>
     );
 }

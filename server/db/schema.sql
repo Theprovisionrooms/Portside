@@ -37,6 +37,11 @@ CREATE TABLE businesses (
     region_id       INTEGER NOT NULL REFERENCES regions(id),
     slug            TEXT NOT NULL,
     name            TEXT NOT NULL,
+    -- 'business' covers shops/venues with a fixed address, 'freelance'
+    -- covers individuals offering a service with no premises - address is
+    -- optional for freelance profiles, see businesses.js
+    type            TEXT NOT NULL DEFAULT 'business'
+                        CHECK (type IN ('business', 'freelance')),
     category        TEXT,
     description     TEXT,
     logo_url        TEXT,
@@ -55,6 +60,21 @@ CREATE TABLE businesses (
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (region_id, slug)
 );
+
+-- logo and gallery photos, uploaded to R2 - see routes/media.js. Video
+-- uses the same table (media_type = 'video') once that pipeline exists,
+-- not built yet - see the note in routes/media.js.
+CREATE TABLE business_media (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_id     INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    media_type      TEXT NOT NULL DEFAULT 'image'
+                        CHECK (media_type IN ('image', 'video')),
+    url             TEXT NOT NULL,
+    caption         TEXT,
+    position        INTEGER NOT NULL DEFAULT 0,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_business_media_business ON business_media (business_id, position);
 
 -- allows more than one staff login per business
 CREATE TABLE business_members (
@@ -171,3 +191,9 @@ LEFT JOIN posts p ON p.business_id = b.id
 LEFT JOIN referrals r_out ON r_out.from_business_id = b.id AND r_out.status = 'completed'
 LEFT JOIN referrals r_in ON r_in.to_business_id = b.id AND r_in.status = 'completed'
 GROUP BY b.id;
+
+-- seed data - Southport is the only region live at launch (see README).
+-- This was missing before, which is why business creation errored with
+-- "Unknown region" - fixed here for fresh installs, see migrations/ for
+-- the remote DB that already exists.
+INSERT INTO regions (name, slug) VALUES ('Southport', 'southport');

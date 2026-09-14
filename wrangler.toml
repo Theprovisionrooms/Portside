@@ -11,6 +11,14 @@ binding = "DB"
 database_name = "portside"
 database_id = "d327fc04-bb09-475d-94b2-51396636bca8"
 
+# Created by `npx wrangler r2 bucket create portside-media`, run that once
+# before your next deploy - no separate "make it public" step needed, files
+# are served back out through /api/media/* in routes/media.js, same one
+# Pages project, nothing hosted separately.
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "portside-media"
+
 # JWT_SECRET, STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are secrets, not
 # vars - for local dev they go in .dev.vars (see .dev.vars.example), and for
 # the deployed site they're set with:
